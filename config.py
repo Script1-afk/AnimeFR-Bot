@@ -1,13 +1,89 @@
 # ============================================================
-# config.py — Configuration centrale AnimeFR Bot v6.0
+# config.py — Configuration centrale AnimeFR Bot v6.1
 # ============================================================
 
 import os
-BOT_TOKEN = os.getenv("BOT_TOKEN", "YOUR_BOT_TOKEN_HERE")
+import sys
+
+# ── Chargement du fichier .env ──
+def _load_env(filepath=".env"):
+    """Charge les variables depuis le fichier .env"""
+    env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), filepath)
+    if os.path.exists(env_path):
+        with open(env_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, _, value = line.partition("=")
+                key = key.strip()
+                value = value.strip().strip('"').strip("'")
+                if key and value:
+                    os.environ.setdefault(key, value)
+        return True
+    return False
+
+_env_loaded = _load_env()
+
+# ── Variables critiques (SANS valeurs par défaut) ──
+BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
+
+# ── Validation au démarrage ──
+def validate_config():
+    """Vérifie que toutes les variables critiques sont configurées.
+    Arrête le bot proprement si une variable manque."""
+    errors = []
+
+    if not BOT_TOKEN:
+        errors.append("❌ BOT_TOKEN manquant — Configurez-le dans .env ou en variable d'environnement")
+    elif BOT_TOKEN in ("YOUR_BOT_TOKEN_HERE", "your_telegram_bot_token_here"):
+        errors.append("❌ BOT_TOKEN contient encore la valeur placeholder — Remplacez-la par votre vrai token")
+    elif ":" not in BOT_TOKEN:
+        errors.append("❌ BOT_TOKEN semble invalide (format attendu : 123456789:ABCdefGHI...)")
+
+    if not OPENAI_API_KEY:
+        errors.append("⚠️  OPENAI_API_KEY manquante — Les fonctionnalités IA seront désactivées")
+    elif OPENAI_API_KEY in ("YOUR_OPENAI_KEY_HERE", "your_openai_api_key_here"):
+        errors.append("⚠️  OPENAI_API_KEY contient encore la valeur placeholder — Les fonctionnalités IA seront désactivées")
+
+    # Afficher les erreurs
+    if errors:
+        print("\n╔══════════════════════════════════════════════════╗")
+        print("║     ⚠️  ERREURS DE CONFIGURATION DÉTECTÉES      ║")
+        print("╠══════════════════════════════════════════════════╣")
+        for err in errors:
+            print(f"║ {err}")
+        print("╠══════════════════════════════════════════════════╣")
+        if not _env_loaded:
+            print("║ 💡 Fichier .env non trouvé !")
+            print("║    Créez-le : cp .env.example .env")
+            print("║    Puis remplissez vos clés.")
+        print("╚══════════════════════════════════════════════════╝\n")
+
+    # Erreur fatale si BOT_TOKEN manquant
+    critical_errors = [e for e in errors if e.startswith("❌")]
+    if critical_errors:
+        print("🛑 Arrêt du bot — Corrigez les erreurs ci-dessus et relancez.")
+        sys.exit(1)
+
+    # Avertissements non-fatals (OpenAI optionnel)
+    warnings = [e for e in errors if e.startswith("⚠️")]
+    if warnings and not critical_errors:
+        print("ℹ️  Le bot démarre avec des fonctionnalités réduites.\n")
+
+    return len(critical_errors) == 0
+
+
+# ── Détection si OpenAI est disponible ──
+OPENAI_AVAILABLE = bool(OPENAI_API_KEY and OPENAI_API_KEY not in (
+    "YOUR_OPENAI_KEY_HERE", "your_openai_api_key_here", ""
+))
+
+# ── Canal ──
 CHANNEL_ID = "@animeFR2026"
 
 # ── OpenAI ──
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "YOUR_OPENAI_KEY_HERE")
 OPENAI_MODEL = "gpt-4o-mini"
 OPENAI_MAX_TOKENS = 1500
 
@@ -37,7 +113,7 @@ ANIME_SOURCES = {
 DEFAULT_SOURCE = "franime"
 
 # ── Version ──
-BOT_VERSION = "6.0"
+BOT_VERSION = "6.1"
 BOT_NAME = "AnimeFR Bot"
 
 # ── Maintenance ──
@@ -91,7 +167,7 @@ EPISODE_CHECK_INTERVAL = 1800
 CALENDAR_CHECK_INTERVAL = 3600
 DAILY_STATS_HOUR = 22
 WEEKLY_RECAP_DAY = 0
-AUTO_PUBLISH_INTERVAL = 3600  # Vérifier les nouveaux épisodes toutes les heures
+AUTO_PUBLISH_INTERVAL = 3600
 
 # ── Limites ──
 MAX_SEARCH_RESULTS = 5
@@ -140,6 +216,6 @@ EXPORT_DIR = "data/exports"
 IMPORT_DIR = "data/imports"
 
 # ── Auto-Publish ──
-AUTO_PUBLISH_ENABLED = False  # Activer via /autopublish
+AUTO_PUBLISH_ENABLED = False
 AUTO_PUBLISH_TEMPLATE = "premium"
 AUTO_PUBLISH_SOURCE = "franime"

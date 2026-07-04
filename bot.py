@@ -1,5 +1,5 @@
 # ============================================================
-# bot.py — Fichier principal AnimeFR Bot v6.0
+# bot.py — Fichier principal AnimeFR Bot v6.1
 # ============================================================
 
 import asyncio
@@ -28,6 +28,7 @@ from config import (
     MAX_FAVORITES, MAX_POLL_OPTIONS, MAX_QUIZ_OPTIONS, MAX_BROADCAST_LENGTH,
     MOBILE_MODE, AUTO_PUBLISH_INTERVAL, AUTO_PUBLISH_ENABLED,
     AUTO_PUBLISH_TEMPLATE, AUTO_PUBLISH_SOURCE, ANIME_SOURCES,
+    OPENAI_AVAILABLE, validate_config,
 )
 from formatter import (
     format_anime_post, format_anime_short, format_anime_short_mobile,
@@ -1999,6 +2000,9 @@ async def scheduler_auto_publish(context: ContextTypes.DEFAULT_TYPE):
 # ═══════════════════════════════════════════════════════════
 
 def main():
+    # ── Validation de la configuration ─────────────────────
+    validate_config()
+
     db.init_db()
 
     app = Application.builder().token(BOT_TOKEN).build()
